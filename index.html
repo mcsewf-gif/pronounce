@@ -26,89 +26,6 @@
     <h1>英文单词发音 (标准美音)</h1>
     
     <div class="search-box">
-      <input type="text" id="wordInput" placeholder="输入单词后按回车 (如: etc)..." autofocus />
-      <button id="searchBtn">播放</button>
-    </div>
-
-    <div class="result-card" id="resultCard">
-      <div class="word-title" id="displayWord">--</div>
-      <button class="audio-btn" id="playAudioBtn" title="重新播放">🔊</button>
-    </div>
-
-    <div class="status-msg" id="statusMsg">输入单词并按回车</div>
-  </div>
-
-  <script>
-    const wordInput = document.getElementById('wordInput');
-    const searchBtn = document.getElementById('searchBtn');
-    const displayWord = document.getElementById('displayWord');
-    const playAudioBtn = document.getElementById('playAudioBtn');
-    const resultCard = document.getElementById('resultCard');
-    const statusMsg = document.getElementById('statusMsg');
-
-    let currentAudioUrl = '';
-
-    function playWord() {
-      const word = wordInput.value.trim();
-      if (!word) {
-        statusMsg.innerText = '请输入单词';
-        return;
-      }
-
-      statusMsg.innerText = '正在播放...';
-      
-      // 直接调用有道美音 API（免 Key）
-      currentAudioUrl = `https://dict.youdao.com/dictvoice?type=0&word=${encodeURIComponent(word)}`;
-
-      displayWord.innerText = word;
-      resultCard.style.display = 'block';
-
-      const audio = new Audio(currentAudioUrl);
-      
-      audio.play().then(() => {
-        statusMsg.innerText = '播放成功（标准美音）';
-      }).catch(err => {
-        console.error(err);
-        statusMsg.innerText = '播放失败，请检查网络';
-      });
-    }
-
-    // 监听回车
-    wordInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') playWord();
-    });
-
-    // 监听按钮点击
-    searchBtn.addEventListener('click', playWord);
-    playAudioBtn.addEventListener('click', () => {
-      if (currentAudioUrl) {<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#2b5c8f">
-  <title>英文单词美音发音</title>
-  <link rel="manifest" href="manifest.json">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, sans-serif; background-color: #f4f7f9; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-    .container { width: 100%; max-width: 500px; background: #fff; margin-top: 40px; padding: 24px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-    h1 { font-size: 1.4rem; color: #1a365d; text-align: center; margin-bottom: 20px; }
-    .search-box { display: flex; gap: 8px; margin-bottom: 16px; }
-    .search-box input { flex: 1; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; outline: none; }
-    .search-box input:focus { border-color: #2b5c8f; }
-    .search-box button { padding: 0 20px; background: #2b5c8f; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-    .result-card { text-align: center; margin-top: 20px; display: none; }
-    .word-title { font-size: 1.8rem; font-weight: bold; margin-bottom: 12px; color: #0f172a; }
-    .audio-btn { width: 64px; height: 64px; border-radius: 50%; background: #eff6ff; border: 2px solid #2b5c8f; color: #2b5c8f; font-size: 1.5rem; cursor: pointer; }
-    .status-msg { text-align: center; font-size: 0.9rem; color: #64748b; margin-top: 15px; min-height: 20px; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>英文单词发音 (标准美音)</h1>
-    
-    <div class="search-box">
       <input type="text" id="wordInput" placeholder="输入单词后按回车 (如: add)..." autofocus />
       <button id="searchBtn">播放</button>
     </div>
@@ -129,7 +46,8 @@
     const resultCard = document.getElementById('resultCard');
     const statusMsg = document.getElementById('statusMsg');
 
-    let currentAudioUrl = '';
+    // 检查浏览器是否支持 Web Speech API
+    const synth = window.speechSynthesis;
 
     function playWord() {
       const word = wordInput.value.trim();
@@ -138,22 +56,37 @@
         return;
       }
 
-      statusMsg.innerText = '正在播放...';
-      
-      // 使用 Google 官方美音 TTS 接口（纯美音 en-US）
-      currentAudioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=en-US&q=${encodeURIComponent(word)}`;
+      if (!synth) {
+        statusMsg.innerText = '当前浏览器不支持本地语音播放';
+        return;
+      }
+
+      // 停止当前正在播放的语音
+      synth.cancel();
+
+      // 创建语音合成对象
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = 'en-US'; // 强制指定美式发音
+      utterance.rate = 0.9;     // 语速略微放慢，更清晰
 
       displayWord.innerText = word;
       resultCard.style.display = 'block';
 
-      const audio = new Audio(currentAudioUrl);
-      
-      audio.play().then(() => {
-        statusMsg.innerText = '播放成功（标准美音）';
-      }).catch(err => {
-        console.error(err);
-        statusMsg.innerText = '播放失败，请检查网络';
-      });
+      utterance.onstart = () => {
+        statusMsg.innerText = '正在播放（美音）...';
+      };
+
+      utterance.onend = () => {
+        statusMsg.innerText = '播放完成';
+      };
+
+      utterance.onerror = (e) => {
+        console.error(e);
+        statusMsg.innerText = '发音失败，请重试';
+      };
+
+      // 触发播放
+      synth.speak(utterance);
     }
 
     // 监听回车
@@ -163,15 +96,11 @@
 
     // 监听按钮点击
     searchBtn.addEventListener('click', playWord);
-    playAudioBtn.addEventListener('click', () => {
-      if (currentAudioUrl) {
-        const audio = new Audio(currentAudioUrl);
-        audio.play();
-      }
-    });
+    playAudioBtn.addEventListener('click', playWord);
   </script>
 </body>
 </html>
+
 
 
 
