@@ -57,7 +57,7 @@
 
       statusMsg.innerText = '正在播放...';
       
-      // 使用有道美音源 (type=0 为美音)
+      // 直接调用有道美音 API（免 Key）
       currentAudioUrl = `https://dict.youdao.com/dictvoice?type=0&word=${encodeURIComponent(word)}`;
 
       displayWord.innerText = word;
@@ -73,7 +73,7 @@
       });
     }
 
-    // 监听键盘回车
+    // 监听回车
     wordInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') playWord();
     });
@@ -86,13 +86,9 @@
         audio.play();
       }
     });
-
-    // PWA Service Worker 注册
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
-    }
   </script>
 </body>
 </html>
+
 
 
