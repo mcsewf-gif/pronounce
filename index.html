@@ -39,7 +39,67 @@
       <button class="audio-btn" id="playAudioBtn">🔊</button>
     </div>
     <div class="status-msg" id="statusMsg">输入单词并按回车</div>
-  </div> 
+  </div>
+
+  <script>
+    async function playWord() {
+  const word = wordInput.value.trim().toLowerCase();
+  if (!word) {
+    statusMsg.innerText = '请输入单词';
+    return;
+  }
+
+  statusMsg.innerText = '查询中...';
+
+  try {
+    // 请求免 Key 的 Free Dictionary API
+    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    const data = await res.json();
+
+    if (!Array.isArray(data) || data.length === 0) {
+      statusMsg.innerText = '未找到该单词';
+      return;
+    }
+
+    // 在返回的数据中寻找带 -us.mp3 (美音) 或任意有效的音频 URL
+    let audioUrl = '';
+    const phonetics = data[0].phonetics || [];
+    
+    // 优先匹配美音 (-us.mp3)
+    for (let p of phonetics) {
+      if (p.audio && p.audio.includes('-us.mp3')) {
+        audioUrl = p.audio;
+        break;
+      }
+    }
+    
+    // 如果没有明确标 -us 的，取第一个非空的音频
+    if (!audioUrl) {
+      for (let p of phonetics) {
+        if (p.audio) {
+          audioUrl = p.audio;
+          break;
+        }
+      }
+    }
+
+    if (!audioUrl) {
+      statusMsg.innerText = '该单词暂无音频发音';
+      return;
+    }
+
+    displayWord.innerText = word;
+    resultCard.style.display = 'block';
+
+    audio.src = audioUrl;
+    audio.play();
+    statusMsg.innerText = '播放成功（标准美音）';
+
+  } catch (err) {
+    statusMsg.innerText = '获取失败，请检查网络或拼写';
+  }
+}
   </script>
 </body>
 </html>
+
