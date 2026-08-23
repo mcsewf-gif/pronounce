@@ -46,69 +46,31 @@
     const resultCard = document.getElementById('resultCard');
     const statusMsg = document.getElementById('statusMsg');
 
-    let audio = new Audio();
+    let currentAudioUrl = '';
 
-    async function playWord() {
-      const word = wordInput.value.trim().toLowerCase();
+    function playWord() {
+      const word = wordInput.value.trim();
       if (!word) {
         statusMsg.innerText = '请输入单词';
         return;
       }
 
-      statusMsg.innerText = '查询中...';
+      statusMsg.innerText = '正在播放...';
+      
+      // 使用有道美音源 (type=0 为美音)
+      currentAudioUrl = `https://dict.youdao.com/dictvoice?type=0&word=${encodeURIComponent(word)}`;
 
-      try {
-        // 使用免 Key 的 Free Dictionary API
-        const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-        
-        if (!res.ok) {
-          throw new Error('未找到该单词');
-        }
+      displayWord.innerText = word;
+      resultCard.style.display = 'block';
 
-        const data = await res.json();
-
-        if (!Array.isArray(data) || data.length === 0) {
-          statusMsg.innerText = '未找到该单词';
-          return;
-        }
-
-        // 寻找美音音频 (.mp3)
-        let audioUrl = '';
-        const phonetics = data[0].phonetics || [];
-        
-        // 1. 优先找显式包含 -us.mp3 的发音
-        for (let p of phonetics) {
-          if (p.audio && p.audio.includes('-us.mp3')) {
-            audioUrl = p.audio;
-            break;
-          }
-        }
-        
-        // 2. 如果没有，取任意第一个有效音频
-        if (!audioUrl) {
-          for (let p of phonetics) {
-            if (p.audio) {
-              audioUrl = p.audio;
-              break;
-            }
-          }
-        }
-
-        if (!audioUrl) {
-          statusMsg.innerText = '该单词暂无官方发音音频';
-          return;
-        }
-
-        displayWord.innerText = word;
-        resultCard.style.display = 'block';
-
-        audio.src = audioUrl;
-        audio.play();
+      const audio = new Audio(currentAudioUrl);
+      
+      audio.play().then(() => {
         statusMsg.innerText = '播放成功（标准美音）';
-
-      } catch (err) {
-        statusMsg.innerText = '未找到该单词或网络请求失败';
-      }
+      }).catch(err => {
+        console.error(err);
+        statusMsg.innerText = '播放失败，请检查网络';
+      });
     }
 
     // 监听键盘回车
@@ -118,7 +80,12 @@
 
     // 监听按钮点击
     searchBtn.addEventListener('click', playWord);
-    playAudioBtn.addEventListener('click', () => audio.play());
+    playAudioBtn.addEventListener('click', () => {
+      if (currentAudioUrl) {
+        const audio = new Audio(currentAudioUrl);
+        audio.play();
+      }
+    });
 
     // PWA Service Worker 注册
     if ('serviceWorker' in navigator) {
